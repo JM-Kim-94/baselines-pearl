@@ -11,8 +11,7 @@
         "n_eval_tasks": 4,
         "n_indistribution_tasks": 0,
         "eval_tasks_list": [],
-        "indistribution_tasks_list": [],
-        "tsne_tasks_list": []
+        "indistribution_tasks_list": []
     },
 
 
