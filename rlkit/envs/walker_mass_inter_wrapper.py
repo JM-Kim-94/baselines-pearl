@@ -14,11 +14,11 @@ from . import register_env
 
 @register_env('walker-mass-inter')
 class WalkerMassInterWrappedEnv(WalkerMassInterEnv):
-    def __init__(self, n_train_tasks, n_eval_tasks, n_indistribution_tasks, eval_tasks_list, indistribution_tasks_list, tsne_tasks_list):
+    def __init__(self, n_train_tasks, n_eval_tasks, n_indistribution_tasks, eval_tasks_list, indistribution_tasks_list):
 
         super(WalkerMassInterWrappedEnv, self).__init__()
         
-        self.tasks, self.tasks_value = self.sample_tasks(n_train_tasks, eval_tasks_list, indistribution_tasks_list, tsne_tasks_list)
+        self.tasks, self.tasks_value = self.sample_tasks(n_train_tasks, eval_tasks_list, indistribution_tasks_list)
         
         self.reset_task(0)
 

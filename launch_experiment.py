@@ -77,29 +77,35 @@ def experiment(variant):
     num_train = variant["n_train_tasks"]  # 50
     num_eval = variant["n_eval_tasks"]  # 5
     num_indistribution = variant["n_indistribution_tasks"]  # 5
-    num_tsne = variant["n_tsne_tasks"]  # 5
+    num_train_tsne = variant["n_train_tsne_tasks"]  # 5
+    num_test_tsne = variant["n_test_tsne_tasks"]  # 5
     print("num_train", num_train)
     print("num_test", num_eval)
     print("num_indistribution", num_indistribution)
-    print("num_tsne", num_tsne)
+    print("num_train_tsne", num_train_tsne)
+    print("num_test_tsne", num_test_tsne)
 
-    print("train_tasks = ", tasks[: num_train])  # 0~49
-    print("eval_tasks = ", tasks[num_train:  num_train + num_eval])  # 50 ~ 54
-    print("indistribution_tasks = ", tasks[num_train + num_eval: num_train + num_eval + num_indistribution])  # 55 ~ 59
-    print("tsne_tasks = ", tasks[num_train + num_eval + num_indistribution: num_train + num_eval + num_indistribution + num_tsne])
 
     train_tasks = tasks[: num_train]
     eval_tasks = tasks[num_train:  num_train + num_eval]
     indistribution_tasks = tasks[num_train + num_eval: num_train + num_eval + num_indistribution]
-    tsne_tasks = tasks[num_train + num_eval + num_indistribution: num_train + num_eval + num_indistribution + num_tsne]
+    train_tsne_tasks = tasks[num_train + num_eval + num_indistribution: num_train + num_eval + num_indistribution + num_train_tsne]
+    test_tsne_tasks = tasks[num_train + num_eval + num_indistribution + num_train_tsne : num_train + num_eval + num_indistribution + num_train_tsne + num_test_tsne]
+
+    print("train_tasks = ", train_tasks)  # 0~49
+    print("eval_tasks = ", eval_tasks)  # 50 ~ 54
+    print("indistribution_tasks = ", indistribution_tasks)  # 55 ~ 59
+    print("train_tsne_tasks = ", train_tsne_tasks)
+    print("test_tsne_tasks = ", test_tsne_tasks)
+
+
 
     """ tsne 그리는 태스크들 
-    ant-dir-2 : [0.0, 1 * np.pi / 4, 0.5 * np.pi, 3 * np.pi / 4, 7 * np.pi / 4]
-    ant-dir-4 : [0.0, 0.25 * np.pi, 0.5 * np.pi, 0.75 * np.pi, np.pi, 1.25 * np.pi, 1.5 * np.pi, 1.75 * np.pi]
-    ant-goal-inter : [[0.5,  0], [0, 0.5 ], [-0.5,  0], [0, -0.5 ],
-                      [1.75, 0], [0, 1.75], [-1.75, 0], [0, -1.75],
-                      [2.75, 0], [0, 2.75], [-2.75, 0], [0, -2.75]]
-    cheetah-vel-inter, walker-mass-inter, hopper-mass-inter : [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25]
+    ant-dir-4 : [0.0, 0.5 * np.pi, np.pi, 1.5 * np.pi](train) + [0.25 * np.pi, 0.75 * np.pi, 1.25 * np.pi, 1.75 * np.pi](test)
+    ant-goal-inter : ([0.5, 1.0, 2.5, 3.0] x np.array([0, 1, 2, 3, 4, 5, 6, 7]) * np.pi / 4) (train32개)  +   ([1.5, 2] x np.array([0, 1, 2, 3, 4, 5, 6, 7]) * np.pi / 4) (test16개) 
+    cheetah-vel-inter, walker-mass-inter, hopper-mass-inter : 
+            train_tsne_tasks_list = [0.1, 0.2, 0.3, 0.4, 0.5] + [3.0, 3.1, 3.2, 3.3, 3.4, 3.5]  # 11개
+            test_tsne_tasks_list = [0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9]  # 24개
     """
 
     algorithm = PEARLSoftActorCritic(
@@ -108,7 +114,8 @@ def experiment(variant):
         train_tasks=train_tasks, 
         eval_tasks=eval_tasks, 
         indistribution_tasks=indistribution_tasks,
-        tsne_tasks=tsne_tasks,
+        train_tsne_tasks=train_tsne_tasks,
+        test_tsne_tasks=test_tsne_tasks,
         nets=[agent, qf1, qf2, vf],
         latent_dim=latent_dim,
         config=variant,

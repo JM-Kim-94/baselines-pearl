@@ -102,10 +102,10 @@ class RandomEnv(MetaEnv, MujocoEnv):
 
         return new_params, body_mass_multiplyers_
         
-    def sample_tasks(self, n_train_tasks, eval_tasks_list, indistribution_tasks_list, tsne_tasks_list):
+    def sample_tasks(self, n_train_tasks, eval_tasks_list, indistribution_tasks_list):
 
-        train_tasks, eval_tasks, indistribution_tasks, tsne_tasks = [], [], [], []
-        train_tasks_value, eval_tasks_value, indistribution_tasks_value, tsne_tasks_value = [], [], [], []
+        train_tasks, eval_tasks, indistribution_tasks = [], [], []
+        train_tasks_value, eval_tasks_value, indistribution_tasks_value = [], [], []
 
         # get_one_rand_params(self, task='inter', eval_mode='train', value=0):  
         """train_task"""  # [0,0.5] + [3,3.5]
@@ -126,11 +126,25 @@ class RandomEnv(MetaEnv, MujocoEnv):
             indistribution_tasks.append(new_params)
             indistribution_tasks_value.append(body_mass_multiplyers_)
 
-        """tsne_task"""  # 16
-        for v in tsne_tasks_list:
+        train_tsne_tasks_list = [0.1, 0.2, 0.3, 0.4, 0.5] + [3.0, 3.1, 3.2, 3.3, 3.4, 3.5]  # 11개
+        test_tsne_tasks_list = [0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9]  # 24개
+
+        train_tsne_tasks, train_tsne_tasks_value = [], []
+        """train_tsne_task"""  # 16
+        for v in train_tsne_tasks_list:
             new_params, body_mass_multiplyers_ = self.get_one_rand_params(eval_mode='eval', value=v)
-            tsne_tasks.append(new_params)
-            tsne_tasks_value.append(body_mass_multiplyers_)
+            train_tsne_tasks.append(new_params)
+            train_tsne_tasks_value.append(body_mass_multiplyers_)
+
+        test_tsne_tasks, test_tsne_tasks_value = [], []
+        """test_tsne_task"""  # 16
+        for v in test_tsne_tasks_list:
+            new_params, body_mass_multiplyers_ = self.get_one_rand_params(eval_mode='eval', value=v)
+            test_tsne_tasks.append(new_params)
+            test_tsne_tasks_value.append(body_mass_multiplyers_)
+
+        tsne_tasks = train_tsne_tasks + test_tsne_tasks
+        tsne_tasks_value = train_tsne_tasks_value + test_tsne_tasks_value
         
         """total tasks list"""
         param_sets = train_tasks + eval_tasks + indistribution_tasks + tsne_tasks

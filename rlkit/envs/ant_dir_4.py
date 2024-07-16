@@ -13,9 +13,9 @@ from . import register_env
 
 @register_env('ant-dir-4개')
 class AntDir4Env(AntEnv):
-    def __init__(self, n_train_tasks, n_eval_tasks, n_indistribution_tasks, eval_tasks_list, indistribution_tasks_list, tsne_tasks_list):
+    def __init__(self, n_train_tasks, n_eval_tasks, n_indistribution_tasks, eval_tasks_list, indistribution_tasks_list):
         self._task = {}
-        self.tasks = self.sample_tasks(n_train_tasks, eval_tasks_list, indistribution_tasks_list, tsne_tasks_list)
+        self.tasks = self.sample_tasks(n_train_tasks, eval_tasks_list, indistribution_tasks_list)
         print("all tasks : ", self.tasks)
         self._goal = self.tasks[0]['goal']
 
@@ -26,11 +26,16 @@ class AntDir4Env(AntEnv):
     def get_obs_dim(self):
         return int(np.prod(self._get_obs().shape))
         
-    def sample_tasks(self, n_train_tasks, eval_tasks_list, indistribution_tasks_list, tsne_tasks_list):
+    def sample_tasks(self, n_train_tasks, eval_tasks_list, indistribution_tasks_list):
 
         train_goal_dir = [0.0, 0.5 * np.pi, np.pi, 1.5 * np.pi]
         eval_goal_dir  = [0.25 * np.pi, 0.75 * np.pi, 1.25 * np.pi, 1.75 * np.pi]
-        tsne_goal_dir = [0.0, 0.25 * np.pi, 0.5 * np.pi, 0.75 * np.pi, np.pi, 1.25 * np.pi, 1.5 * np.pi, 1.75 * np.pi]
+        # tsne_goal_dir = [0.0, 0.25 * np.pi, 0.5 * np.pi, 0.75 * np.pi, np.pi, 1.25 * np.pi, 1.5 * np.pi, 1.75 * np.pi]
+
+        train_tsne_goal_dir = [0.0, 0.5 * np.pi, np.pi, 1.5 * np.pi]
+        test_tsne_goal_dir = [0.25 * np.pi, 0.75 * np.pi, 1.25 * np.pi, 1.75 * np.pi]
+        tsne_goal_dir = train_tsne_goal_dir + test_tsne_goal_dir
+
         goal_dirs = train_goal_dir + eval_goal_dir + tsne_goal_dir
 
         tasks = [{'goal': goal_dir} for goal_dir in goal_dirs]

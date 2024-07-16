@@ -23,7 +23,8 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
             train_tasks,
             eval_tasks,
             indistribution_tasks,
-            tsne_tasks,
+            train_tsne_tasks,
+            test_tsne_tasks,
             meta_batch=64,
             num_iterations=100,
             num_train_steps_per_itr=1000,
@@ -72,7 +73,8 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
         self.train_tasks = train_tasks
         self.eval_tasks = eval_tasks
         self.indistribution_tasks = indistribution_tasks
-        self.tsne_tasks = tsne_tasks
+        self.train_tsne_tasks = train_tsne_tasks
+        self.test_tsne_tasks = test_tsne_tasks
 
         self.meta_batch = meta_batch
         self.num_iterations = num_iterations
@@ -449,6 +451,7 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
     def _do_tsne_plot(self, indices, epoch):
         # collect_paths 활용
         # asdf asdfas
+        print("NEED TO PLOT TSNE")
         pass
 
     def evaluate(self, epoch, loss_list):
@@ -512,11 +515,10 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
             eval_util.dprint(test_online_returns)
 
 
-        # if epoch % self.tsne_plot_freq == 0:
-        #     print("TSNE plot 시작")
-        #     # self._do_tsne_eval(self.tsne_tasks, epoch)
-        #     self._do_tsne_plot(self.tsne_tasks, epoch)
-        #     print("TSNE plot 끝")
+        if epoch % self.tsne_plot_freq == 0:
+            print("TSNE plot 시작")
+            self._do_tsne_plot(self.train_tsne_tasks + self.test_tsne_tasks, epoch)
+            print("TSNE plot 끝")
 
         
 
