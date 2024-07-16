@@ -11,14 +11,19 @@ from rlkit.data_management.path_builder import PathBuilder
 from rlkit.samplers.in_place import InPlacePathSampler
 from rlkit.torch import pytorch_util as ptu
 
+import wandb
+from MulticoreTSNE import MulticoreTSNE as TSNE
 
 class MetaRLAlgorithm(metaclass=abc.ABCMeta):
     def __init__(
             self,
             env,
+            env_name,
             agent,
             train_tasks,
             eval_tasks,
+            indistribution_tasks,
+            tsne_tasks,
             meta_batch=64,
             num_iterations=100,
             num_train_steps_per_itr=1000,
@@ -46,6 +51,9 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
             render_eval_paths=False,
             dump_eval_paths=False,
             plotter=None,
+            alpha=1,
+            config={},
+            tsne_plot_freq=20
     ):
         """
         :param env: training env
@@ -55,11 +63,17 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
 
         see default experiment config file for descriptions of the rest of the arguments
         """
+        self.tsne_plot_freq = tsne_plot_freq
         self.env = env
+        self.env_name = env_name
         self.agent = agent
         self.exploration_agent = agent # Can potentially use a different policy purely for exploration rather than also solving tasks, currently not being used
+        
         self.train_tasks = train_tasks
         self.eval_tasks = eval_tasks
+        self.indistribution_tasks = indistribution_tasks
+        self.tsne_tasks = tsne_tasks
+
         self.meta_batch = meta_batch
         self.num_iterations = num_iterations
         self.num_train_steps_per_itr = num_train_steps_per_itr
@@ -89,6 +103,8 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
         self.render_eval_paths = render_eval_paths
         self.dump_eval_paths = dump_eval_paths
         self.plotter = plotter
+
+        self.alpha = alpha
 
         self.sampler = InPlacePathSampler(
             env=env,
@@ -120,6 +136,18 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
         self._old_table_keys = None
         self._current_path_builder = PathBuilder()
         self._exploration_paths = []
+
+
+        wandb.login(key="7316f79887c82500a01a529518f2af73d5520255")
+        wandb.init(
+            entity='mlic_academic',
+            project='김정모_metaRL_new4',
+            group=self.env_name,  
+            name='pearl-' + self.env_name + "-rs" + str(config['algo_params']['reward_scale']) + "-alpha" + str(config['algo_params']['alpha']),
+            config=config,
+        )
+
+
 
     def make_exploration_policy(self, policy):
          return policy
@@ -179,17 +207,36 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
                 if self.num_extra_rl_steps_posterior > 0:
                     self.collect_data(self.num_extra_rl_steps_posterior, 1, self.update_post_train, add_to_enc_buffer=False)
 
+            loss_list = {"q1_pred":[], 
+                        "q2_pred":[], 
+                        "v_pred":[], 
+                        "target_v_values":[], 
+                        "kl_loss":[], 
+                        "q_target":[], 
+                        "qf_loss":[], 
+                        "v_target":[], 
+                        "policy_loss":[], 
+                        "log_pi":[]
+                        }
             # Sample train tasks and compute gradient updates on parameters.
             for train_step in range(self.num_train_steps_per_itr):
                 indices = np.random.choice(self.train_tasks, self.meta_batch)
-                self._do_training(indices)
+                
+                loss_dict = self._do_training(indices)
+                for k in loss_dict.keys():
+                    loss_list[k].append(loss_dict[k])
+
                 self._n_train_steps_total += 1
+
+            for k in loss_list.keys():
+                loss_list[k] = np.mean(loss_list[k])
+
             gt.stamp('train')
 
             self.training_mode(False)
 
             # eval
-            self._try_to_eval(it_)
+            self._try_to_eval(it_, loss_list)
             gt.stamp('eval')
 
             self._end_epoch()
@@ -230,10 +277,10 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
         self._n_env_steps_total += num_transitions
         gt.stamp('sample')
 
-    def _try_to_eval(self, epoch):
+    def _try_to_eval(self, epoch, loss_list):
         logger.save_extra_data(self.get_extra_data_to_save(epoch))
         if self._can_evaluate():
-            self.evaluate(epoch)
+            self.evaluate(epoch, loss_list)
 
             params = self.get_epoch_snapshot(epoch)
             logger.save_itr_params(epoch, params)
@@ -345,12 +392,13 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
             data_to_save['algorithm'] = self
         return data_to_save
 
-    def collect_paths(self, idx, epoch, run):
+    def collect_paths(self, idx, epoch, run, return_z=False):
         self.task_idx = idx
         self.env.reset_task(idx)
 
         self.agent.clear_z()
         paths = []
+        task_z = []
         num_transitions = 0
         num_trajs = 0
         while num_transitions < self.num_steps_per_eval:
@@ -360,6 +408,7 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
             num_trajs += 1
             if num_trajs >= self.num_exp_traj_eval:
                 self.agent.infer_posterior(self.agent.context)
+                task_z.append(self.agent.z)
 
         if self.sparse_rewards:
             for p in paths:
@@ -374,7 +423,10 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
         if self.dump_eval_paths:
             logger.save_extra_data(paths, path='eval_trajectories/task{}-epoch{}-run{}'.format(idx, epoch, run))
 
-        return paths
+        if return_z:
+            return paths, task_z[0]
+        else:
+            return paths
 
     def _do_eval(self, indices, epoch):
         final_returns = []
@@ -394,7 +446,7 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
         online_returns = [t[:n] for t in online_returns]
         return final_returns, online_returns
 
-    def evaluate(self, epoch):
+    def evaluate(self, epoch, loss_list):
         if self.eval_statistics is None:
             self.eval_statistics = OrderedDict()
 
@@ -445,6 +497,24 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
         eval_util.dprint('test online returns')
         eval_util.dprint(test_online_returns)
 
+        ### Indistribution 
+        if self.env_name == "ant-dir-4개":
+            indistribution_final_returns = [0]
+        else:
+            eval_util.dprint('evaluating on {} test tasks'.format(len(self.indistribution_tasks)))
+            indistribution_final_returns, indistribution_online_returns = self._do_eval(self.indistribution_tasks, epoch)
+            eval_util.dprint('test online returns')
+            eval_util.dprint(test_online_returns)
+
+
+        if epoch % self.tsne_plot_freq == 0:
+            print("TSNE plot 시작")
+            # self._do_tsne_eval(self.tsne_tasks, epoch)
+            self._do_tsne_eval_add_inter_plot(self.tsne_tasks, epoch)
+            print("TSNE plot 끝")
+
+        
+
         # save the final posterior
         self.agent.log_diagnostics(self.eval_statistics)
 
@@ -453,6 +523,7 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
 
         avg_train_return = np.mean(train_final_returns)
         avg_test_return = np.mean(test_final_returns)
+        avg_indistribution_return = np.mean(indistribution_final_returns)
         avg_train_online_return = np.mean(np.stack(train_online_returns), axis=0)
         avg_test_online_return = np.mean(np.stack(test_online_returns), axis=0)
         self.eval_statistics['AverageTrainReturn_all_train_tasks'] = train_returns
@@ -460,6 +531,19 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
         self.eval_statistics['AverageReturn_all_test_tasks'] = avg_test_return
         logger.save_extra_data(avg_train_online_return, path='online-train-epoch{}'.format(epoch))
         logger.save_extra_data(avg_test_online_return, path='online-test-epoch{}'.format(epoch))
+
+
+        wandb_log_dict = {
+            "Eval/train_avg_return": avg_train_return,
+            "Eval/test_avg_return": avg_test_return,
+            "Eval/indistribution_avg_return": avg_indistribution_return,
+        }
+        wandb_log_dict.update(loss_list)        
+
+        wandb.log(wandb_log_dict, step=self._n_env_steps_total)
+
+
+
 
         for key, value in self.eval_statistics.items():
             logger.record_tabular(key, value)

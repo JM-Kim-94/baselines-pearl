@@ -161,10 +161,14 @@ class PEARLSoftActorCritic(MetaRLAlgorithm):
         # do this in a loop so we can truncate backprop in the recurrent encoder
         for i in range(num_updates):
             context = context_batch[:, i * mb_size: i * mb_size + mb_size, :]
-            self._take_step(indices, context)
+            loss_dict = self._take_step(indices, context)
 
             # stop backprop
             self.agent.detach_z()
+        
+        return loss_dict # 
+
+
 
     def _min_q(self, obs, actions, task_z):
         q1 = self.qf1(obs, actions, task_z.detach())
@@ -193,7 +197,7 @@ class PEARLSoftActorCritic(MetaRLAlgorithm):
         next_obs = next_obs.view(t * b, -1)
 
         # Q and V networks
-        # encoder will only get gradients from Q nets
+        # encoder will only get gradients from Q nets  
         q1_pred = self.qf1(obs, actions, task_z)
         q2_pred = self.qf2(obs, actions, task_z)
         v_pred = self.vf(obs, task_z.detach())
@@ -226,7 +230,7 @@ class PEARLSoftActorCritic(MetaRLAlgorithm):
         min_q_new_actions = self._min_q(obs, new_actions, task_z)
 
         # vf update
-        v_target = min_q_new_actions - log_pi
+        v_target = min_q_new_actions - self.alpha * log_pi
         vf_loss = self.vf_criterion(v_pred, v_target.detach())
         self.vf_optimizer.zero_grad()
         vf_loss.backward()
@@ -238,7 +242,7 @@ class PEARLSoftActorCritic(MetaRLAlgorithm):
         log_policy_target = min_q_new_actions
 
         policy_loss = (
-                log_pi - log_policy_target
+                self.alpha * log_pi - log_policy_target
         ).mean()
 
         mean_reg_loss = self.policy_mean_reg_weight * (policy_mean**2).mean()
@@ -292,6 +296,24 @@ class PEARLSoftActorCritic(MetaRLAlgorithm):
                 'Policy log std',
                 ptu.get_numpy(policy_log_std),
             ))
+        
+
+        return {
+            "q1_pred":q1_pred.mean().item(), 
+            "q2_pred":q2_pred.mean().item(), 
+            "v_pred":v_pred.mean().item(), 
+            "target_v_values":target_v_values.mean().item(), 
+            "kl_loss":kl_loss.mean().item(), 
+            "q_target":q_target.mean().item(), 
+            "qf_loss":qf_loss.mean().item(), 
+            "v_target":v_target.mean().item(), 
+            "policy_loss":policy_loss.mean().item(), 
+            "log_pi":log_pi.mean().item(), 
+        }
+
+
+
+
 
     def get_epoch_snapshot(self, epoch):
         # NOTE: overriding parent method which also optionally saves the env

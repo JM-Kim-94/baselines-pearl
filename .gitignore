@@ -1,4 +1,5 @@
 ## General
+wandb
 
 *.pyc
 *.ipynb_checkpoints

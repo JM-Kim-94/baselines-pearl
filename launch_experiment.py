@@ -22,9 +22,13 @@ from configs.default import default_config
 
 def experiment(variant):
 
+    print("variant", variant)
+
     # create multi-task environment and sample tasks
-    env = NormalizedBoxEnv(ENVS[variant['env_name']](**variant['env_params']))
-    tasks = env.get_all_task_idx()
+    env = NormalizedBoxEnv(  ENVS[variant['env_name']]  (**variant['env_params'])  )
+
+    tasks, total_tasks_dict_list = env.get_all_task_idx()
+
     obs_dim = int(np.prod(env.observation_space.shape))
     action_dim = int(np.prod(env.action_space.shape))
     reward_dim = 1
@@ -69,12 +73,45 @@ def experiment(variant):
         policy,
         **variant['algo_params']
     )
+
+    num_train = variant["n_train_tasks"]  # 50
+    num_eval = variant["n_eval_tasks"]  # 5
+    num_indistribution = variant["n_indistribution_tasks"]  # 5
+    num_tsne = variant["n_tsne_tasks"]  # 5
+    print("num_train", num_train)
+    print("num_test", num_eval)
+    print("num_indistribution", num_indistribution)
+    print("num_tsne", num_tsne)
+
+    print("train_tasks = ", tasks[: num_train])  # 0~49
+    print("eval_tasks = ", tasks[num_train:  num_train + num_eval])  # 50 ~ 54
+    print("indistribution_tasks = ", tasks[num_train + num_eval: num_train + num_eval + num_indistribution])  # 55 ~ 59
+    print("tsne_tasks = ", tasks[num_train + num_eval + num_indistribution: num_train + num_eval + num_indistribution + num_tsne])
+
+    train_tasks = tasks[: num_train]
+    eval_tasks = tasks[num_train:  num_train + num_eval]
+    indistribution_tasks = tasks[num_train + num_eval: num_train + num_eval + num_indistribution]
+    tsne_tasks = tasks[num_train + num_eval + num_indistribution: num_train + num_eval + num_indistribution + num_tsne]
+
+    """ tsne 그리는 태스크들 
+    ant-dir-2 : [0.0, 1 * np.pi / 4, 0.5 * np.pi, 3 * np.pi / 4, 7 * np.pi / 4]
+    ant-dir-4 : [0.0, 0.25 * np.pi, 0.5 * np.pi, 0.75 * np.pi, np.pi, 1.25 * np.pi, 1.5 * np.pi, 1.75 * np.pi]
+    ant-goal-inter : [[0.5,  0], [0, 0.5 ], [-0.5,  0], [0, -0.5 ],
+                      [1.75, 0], [0, 1.75], [-1.75, 0], [0, -1.75],
+                      [2.75, 0], [0, 2.75], [-2.75, 0], [0, -2.75]]
+    cheetah-vel-inter, walker-mass-inter, hopper-mass-inter : [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25]
+    """
+
     algorithm = PEARLSoftActorCritic(
         env=env,
-        train_tasks=list(tasks[:variant['n_train_tasks']]),
-        eval_tasks=list(tasks[-variant['n_eval_tasks']:]),
+        env_name=variant['env_name'],
+        train_tasks=train_tasks, 
+        eval_tasks=eval_tasks, 
+        indistribution_tasks=indistribution_tasks,
+        tsne_tasks=tsne_tasks,
         nets=[agent, qf1, qf2, vf],
         latent_dim=latent_dim,
+        config=variant,
         **variant['algo_params']
     )
 
@@ -126,7 +163,9 @@ def deep_update_dict(fr, to):
 @click.option('--gpu', default=0)
 @click.option('--docker', is_flag=True, default=False)
 @click.option('--debug', is_flag=True, default=False)
-def main(config, gpu, docker, debug):
+@click.option('--reward_scale', default=5.0, type=float)
+@click.option('--alpha', default=1.0, type=float)
+def main(config, gpu, docker, debug, reward_scale, alpha):
 
     variant = default_config
     if config:
@@ -134,6 +173,9 @@ def main(config, gpu, docker, debug):
             exp_params = json.load(f)
         variant = deep_update_dict(exp_params, variant)
     variant['util_params']['gpu_id'] = gpu
+
+    variant['algo_params']['reward_scale'] = reward_scale
+    variant['algo_params']['alpha'] = alpha
 
     experiment(variant)
 

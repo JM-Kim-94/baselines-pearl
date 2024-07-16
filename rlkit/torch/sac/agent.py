@@ -104,6 +104,12 @@ class PEARLAgent(nn.Module):
         no = ptu.from_numpy(no[None, None, ...])
 
         if self.use_next_obs_in_context:
+            # print("o", o.shape)
+            # print("a", a.shape)
+            # print("r", r.shape)
+            # print("no", no.shape)
+            if len(r.size()) == 4:
+                r = r.squeeze(0)
             data = torch.cat([o, a, r, no], dim=2)
         else:
             data = torch.cat([o, a, r], dim=2)
