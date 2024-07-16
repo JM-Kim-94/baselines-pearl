@@ -4,6 +4,7 @@ wandb
 *.pyc
 *.ipynb_checkpoints
 __pycache__
+.idea
 
 *.npy
 *.pkl
