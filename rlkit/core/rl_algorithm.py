@@ -4,15 +4,18 @@ import time
 
 import gtimer as gt
 import numpy as np
+import os
 
 from rlkit.core import logger, eval_util
+from rlkit.core.latent_vectors import LatentVectors, EnvType
 from rlkit.data_management.env_replay_buffer import MultiTaskReplayBuffer
 from rlkit.data_management.path_builder import PathBuilder
 from rlkit.samplers.in_place import InPlacePathSampler
 from rlkit.torch import pytorch_util as ptu
-
+from datetime import datetime
 import wandb
 from MulticoreTSNE import MulticoreTSNE as TSNE
+
 
 class MetaRLAlgorithm(metaclass=abc.ABCMeta):
     def __init__(
@@ -138,6 +141,8 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
         self._old_table_keys = None
         self._current_path_builder = PathBuilder()
         self._exploration_paths = []
+        self.tsne_log_dir = f"logs/{self.env_name}/{datetime.now()}/tsne"
+        os.makedirs(self.tsne_log_dir)
 
 
         wandb.login(key="7316f79887c82500a01a529518f2af73d5520255")
@@ -449,10 +454,22 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
         return final_returns, online_returns
 
     def _do_tsne_plot(self, indices, epoch):
-        # collect_paths 활용
-        # asdf asdfas
-        print("NEED TO PLOT TSNE")
-        pass
+        trials = 30
+        latent_samples = []
+        indices_list = {task: [] for task in indices}
+        i = 0
+
+        for trial in range(trials):
+            for task in indices:
+                _, latent_sample = self.collect_paths(task, epoch, trial, return_z=True)
+                latent_samples.append(latent_sample.squeeze().numpy(force=True))
+                indices_list[task].append(i)
+                i += 1
+
+        latent_vectors = LatentVectors(np.asarray(latent_samples), indices_list, epoch, EnvType.parse(self.env_name))
+        latent_vectors.save(self.tsne_log_dir)
+        latent_vectors.save_plot(self.tsne_log_dir, wandb)
+
 
     def evaluate(self, epoch, loss_list):
         if self.eval_statistics is None:
@@ -538,7 +555,6 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
         self.eval_statistics['AverageReturn_all_test_tasks'] = avg_test_return
         logger.save_extra_data(avg_train_online_return, path='online-train-epoch{}'.format(epoch))
         logger.save_extra_data(avg_test_online_return, path='online-test-epoch{}'.format(epoch))
-
 
         wandb_log_dict = {
             "Eval/train_avg_return": avg_train_return,
