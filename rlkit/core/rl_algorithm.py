@@ -446,6 +446,10 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
         online_returns = [t[:n] for t in online_returns]
         return final_returns, online_returns
 
+    def _do_tsne_plot(self, indices, epoch):
+        # collect_paths 활용
+        pass
+
     def evaluate(self, epoch, loss_list):
         if self.eval_statistics is None:
             self.eval_statistics = OrderedDict()
@@ -507,11 +511,11 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
             eval_util.dprint(test_online_returns)
 
 
-        if epoch % self.tsne_plot_freq == 0:
-            print("TSNE plot 시작")
-            # self._do_tsne_eval(self.tsne_tasks, epoch)
-            self._do_tsne_eval_add_inter_plot(self.tsne_tasks, epoch)
-            print("TSNE plot 끝")
+        # if epoch % self.tsne_plot_freq == 0:
+        #     print("TSNE plot 시작")
+        #     # self._do_tsne_eval(self.tsne_tasks, epoch)
+        #     self._do_tsne_plot(self.tsne_tasks, epoch)
+        #     print("TSNE plot 끝")
 
         
 
