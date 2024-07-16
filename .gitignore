@@ -6,6 +6,9 @@ wandb
 __pycache__
 .idea
 
+.idea
+rand_param_envs/
+
 *.npy
 *.pkl
 

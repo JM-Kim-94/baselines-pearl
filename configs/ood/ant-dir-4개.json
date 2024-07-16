@@ -4,7 +4,8 @@
     "n_train_tasks": 4,
     "n_eval_tasks": 4,
     "n_indistribution_tasks": 0,
-    "n_tsne_tasks": 8,
+    "n_train_tsne_tasks": 4,
+    "n_test_tsne_tasks": 4,
     "env_params": {
         "n_train_tasks": 4,
         "n_eval_tasks": 4,

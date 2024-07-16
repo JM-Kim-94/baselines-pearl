@@ -4,17 +4,15 @@
     "n_train_tasks": 150,
     "n_eval_tasks": 4,
     "n_indistribution_tasks": 8,
-    "n_tsne_tasks": 12,
+    "n_train_tsne_tasks": 32,
+    "n_test_tsne_tasks": 16,
     "env_params": {
         "n_train_tasks": 150,
         "n_eval_tasks": 4,
         "n_indistribution_tasks": 8,
         "eval_tasks_list": [[1.75, 0], [0, 1.75], [-1.75, 0], [0, -1.75]],
         "indistribution_tasks_list": [[0.5,  0], [0, 0.5 ], [-0.5,  0], [0, -0.5 ],
-                                      [2.75, 0], [0, 2.75], [-2.75, 0], [0, -2.75]],
-        "tsne_tasks_list": [[0.5,  0], [0, 0.5 ], [-0.5,  0], [0, -0.5 ],
-                            [1.75, 0], [0, 1.75], [-1.75, 0], [0, -1.75],
-                            [2.75, 0], [0, 2.75], [-2.75, 0], [0, -2.75]]
+                                      [2.75, 0], [0, 2.75], [-2.75, 0], [0, -2.75]]
     },
 
     "algo_params": {

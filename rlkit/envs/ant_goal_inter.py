@@ -17,9 +17,9 @@ from . import register_env
 # Copy task structure from https://github.com/jonasrothfuss/ProMP/blob/master/meta_policy_search/envs/mujoco_envs/ant_rand_goal.py
 @register_env('ant-goal-inter')
 class AntGoalInterEnv(AntEnv):
-    def __init__(self, n_train_tasks, n_eval_tasks, n_indistribution_tasks, eval_tasks_list, indistribution_tasks_list, tsne_tasks_list):  # ood = "inter" or "extra"
+    def __init__(self, n_train_tasks, n_eval_tasks, n_indistribution_tasks, eval_tasks_list, indistribution_tasks_list):  # ood = "inter" or "extra"
         self._task = {}
-        self.tasks = self.sample_tasks(n_train_tasks, n_eval_tasks, eval_tasks_list, indistribution_tasks_list, tsne_tasks_list)
+        self.tasks = self.sample_tasks(n_train_tasks, n_eval_tasks, eval_tasks_list, indistribution_tasks_list)
         print("all tasks : ", self.tasks)
         self._goal = self.tasks[0]['goal']
 
@@ -49,7 +49,7 @@ class AntGoalInterEnv(AntEnv):
     def get_obs_dim(self):
         return int(np.prod(self._get_obs().shape))
 
-    def sample_tasks(self, n_train_tasks, n_eval_tasks, eval_tasks_list, indistribution_tasks_list, tsne_tasks_list):
+    def sample_tasks(self, n_train_tasks, n_eval_tasks, eval_tasks_list, indistribution_tasks_list):
 
         goal_train = []
         for i in range(n_train_tasks):
@@ -64,7 +64,27 @@ class AntGoalInterEnv(AntEnv):
 
         goal_test = eval_tasks_list
         goal_indistribution = indistribution_tasks_list
-        goal_tsne = tsne_tasks_list
+
+
+        """tsne-tasks"""
+        theta_list = np.array([0, 1, 2, 3, 4, 5, 6, 7]) * np.pi / 4
+        train_r_list = np.array([0.5, 1.0, 2.5, 3.0])
+        test_r_list = np.array([1.5, 2.0])
+        train_tsne_tasks_list, test_tsne_tasks_list = [], []
+
+        for r in train_r_list:
+            for theta in theta_list:
+                x = r * np.cos(theta)
+                y = r * np.sin(theta)
+                train_tsne_tasks_list.append([x, y])
+
+        for r in test_r_list:
+            for theta in theta_list:
+                x = r * np.cos(theta)
+                y = r * np.sin(theta)
+                test_tsne_tasks_list.append([x, y])
+
+        goal_tsne = train_tsne_tasks_list + test_tsne_tasks_list
 
         goals = goal_train + goal_test + goal_indistribution + goal_tsne
         goals = np.array(goals)

@@ -25,10 +25,10 @@ class CheetahVelInterEnv(HalfCheetahEnv):
         (https://homes.cs.washington.edu/~todorov/papers/TodorovIROS12.pdf)
     """
 
-    def __init__(self, n_train_tasks, n_eval_tasks, n_indistribution_tasks, eval_tasks_list, indistribution_tasks_list, tsne_tasks_list):
+    def __init__(self, n_train_tasks, n_eval_tasks, n_indistribution_tasks, eval_tasks_list, indistribution_tasks_list):
         
         self._task = {}
-        self.tasks = self.sample_tasks(n_train_tasks, eval_tasks_list, indistribution_tasks_list, tsne_tasks_list)
+        self.tasks = self.sample_tasks(n_train_tasks, eval_tasks_list, indistribution_tasks_list)
         print("all tasks : ", self.tasks)
         self._goal_vel = self.tasks[0].get('velocity', 0.0)
         self._goal = self._goal_vel
@@ -53,7 +53,7 @@ class CheetahVelInterEnv(HalfCheetahEnv):
 
         return observation, reward, done, infos
 
-    def sample_tasks(self, n_train_tasks, eval_tasks_list, indistribution_tasks_list, tsne_tasks_list):
+    def sample_tasks(self, n_train_tasks, eval_tasks_list, indistribution_tasks_list):
         print("num_train_tasks:", n_train_tasks)
         # np.random.seed(1337)
 
@@ -70,7 +70,11 @@ class CheetahVelInterEnv(HalfCheetahEnv):
         # velocities_test = list(np.linspace(0.75, 2.75, 5))
         velocities_test = eval_tasks_list
         velocities_indistribution = indistribution_tasks_list
-        velocities_tsne = tsne_tasks_list
+
+        train_tsne_tasks = [0.1, 0.2, 0.3, 0.4, 0.5] + [3.0, 3.1, 3.2, 3.3, 3.4, 3.5]  # 11개
+        test_tsne_tasks = [0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9]  # 24개
+
+        velocities_tsne = train_tsne_tasks + test_tsne_tasks
 
         velocities = velocities_train + velocities_test + velocities_indistribution + velocities_tsne
         tasks = [{"velocity": velocity} for velocity in velocities]
