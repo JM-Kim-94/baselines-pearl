@@ -141,9 +141,9 @@ class MetaRLAlgorithm(metaclass=abc.ABCMeta):
         wandb.login(key="7316f79887c82500a01a529518f2af73d5520255")
         wandb.init(
             entity='mlic_academic',
-            project='김정모_metaRL_new4',
+            project='김정모_metaRL_baselines',
             group=self.env_name,  
-            name='pearl-' + self.env_name + "-rs" + str(config['algo_params']['reward_scale']) + "-alpha" + str(config['algo_params']['alpha']),
+            name='pearl-' + self.env_name + "-rs" + str(config['algo_params']['reward_scale']) + "-alpha" + str(config['algo_params']['alpha']) + "-kl" + str(config['algo_params']['kl_lambda']),
             config=config,
         )
 

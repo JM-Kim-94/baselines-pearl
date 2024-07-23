@@ -165,7 +165,9 @@ def deep_update_dict(fr, to):
 @click.option('--debug', is_flag=True, default=False)
 @click.option('--reward_scale', default=5.0, type=float)
 @click.option('--alpha', default=1.0, type=float)
-def main(config, gpu, docker, debug, reward_scale, alpha):
+@click.option('--kl', default=0.1, type=float)
+@click.option('--use_ib', default=False)
+def main(config, gpu, docker, debug, reward_scale, alpha, kl, use_ib):
 
     variant = default_config
     if config:
@@ -176,6 +178,8 @@ def main(config, gpu, docker, debug, reward_scale, alpha):
 
     variant['algo_params']['reward_scale'] = reward_scale
     variant['algo_params']['alpha'] = alpha
+    variant['algo_params']['kl_lambda'] = kl
+    variant['algo_params']['use_information_bottleneck'] = use_ib
 
     experiment(variant)
 

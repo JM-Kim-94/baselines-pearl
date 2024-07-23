@@ -31,10 +31,25 @@ def sim_policy(variant, path_to_exp, num_trajs=1, deterministic=False, save_vide
 
     # create multi-task environment and sample tasks
     env = CameraWrapper(NormalizedBoxEnv(ENVS[variant['env_name']](**variant['env_params'])), variant['util_params']['gpu_id'])
-    tasks = env.get_all_task_idx()
+
+    num_train = variant["n_train_tasks"]  #
+    num_eval = variant["n_eval_tasks"]  #
+    num_indistribution = variant["n_indistribution_tasks"]  #
+    num_tsne = variant["n_tsne_tasks"]  #
+
+
+    tasks, total_tasks_dict_list = env.get_all_task_idx()
     obs_dim = int(np.prod(env.observation_space.shape))
     action_dim = int(np.prod(env.action_space.shape))
-    eval_tasks=list(tasks[-variant['n_eval_tasks']:])
+    # eval_tasks=list(tasks[-variant['n_eval_tasks']:])
+
+    # train_tasks = tasks[: num_train]
+    # eval_tasks = tasks[num_train:  num_train + num_eval]
+    # indistribution_tasks = tasks[num_train + num_eval: num_train + num_eval + num_indistribution]
+    # tsne_tasks = tasks[num_train + num_eval + num_indistribution: num_train + num_eval + num_indistribution + num_tsne]
+
+    eval_tasks = tasks[num_train + num_eval + num_indistribution: num_train + num_eval + num_indistribution + num_tsne]
+
     print('testing on {} test tasks, {} trajectories each'.format(len(eval_tasks), num_trajs))
 
     # instantiate networks
@@ -110,7 +125,7 @@ def sim_policy(variant, path_to_exp, num_trajs=1, deterministic=False, save_vide
 @click.command()
 @click.argument('config', default=None)
 @click.argument('path', default=None)
-@click.option('--num_trajs', default=3)
+@click.option('--num_trajs', default=3)  # 200 * 3
 @click.option('--deterministic', is_flag=True, default=False)
 @click.option('--video', is_flag=True, default=False)
 def main(config, path, num_trajs, deterministic, video):
