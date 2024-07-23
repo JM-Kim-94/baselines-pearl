@@ -1,0 +1,45 @@
+----------------------------------  ---------------
+Z mean train                            0.00144852
+Z variance train                        0.00270624
+KL Divergence                          49.1491
+KL Loss                                 4.91491
+QF Loss                                59.2001
+VF Loss                                29.4043
+Policy Loss                            -5.38333
+Q Predictions Mean                     -0.00091013
+Q Predictions Std                       0.00145801
+Q Predictions Max                       0.00330379
+Q Predictions Min                      -0.00798386
+V Predictions Mean                     -0.00327987
+V Predictions Std                       0.00152985
+V Predictions Max                       0.00161526
+V Predictions Min                      -0.0091524
+Log Pis Mean                           -5.40409
+Log Pis Std                             0.62348
+Log Pis Max                            -3.39014
+Log Pis Min                            -8.42538
+Policy mu Mean                          7.71516e-05
+Policy mu Std                           0.00157055
+Policy mu Max                           0.00375189
+Policy mu Min                          -0.00469548
+Policy log std Mean                     0.000399053
+Policy log std Std                      0.00177466
+Policy log std Max                      0.00507034
+Policy log std Min                     -0.00420391
+Z mean eval                             0.0251946
+Z variance eval                         0.134531
+AverageTrainReturn_all_train_tasks    163.623
+AverageReturn_all_train_tasks         161.573
+AverageReturn_all_test_tasks          160.645
+Number of train steps total          4000
+Number of env steps total           14080
+Number of rollouts total                0
+Train Time (s)                        161.832
+(Previous) Eval Time (s)                0
+Sample Time (s)                        25.2745
+Epoch Time (s)                        187.107
+Total Train Time (s)                  220.359
+Epoch                                   0
+----------------------------------  ---------------
+2024-06-24 05:04:32.571989 UTC | [2024_06_24_05_00_52] Iteration #0 | Epoch Duration: 220.36270141601562
+2024-06-24 05:04:32.572167 UTC | [2024_06_24_05_00_52] Iteration #0 | Started Training: True
