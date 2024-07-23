@@ -43,12 +43,10 @@ def sim_policy(variant, path_to_exp, num_trajs=1, deterministic=False, save_vide
     action_dim = int(np.prod(env.action_space.shape))
     # eval_tasks=list(tasks[-variant['n_eval_tasks']:])
 
-    # train_tasks = tasks[: num_train]
-    # eval_tasks = tasks[num_train:  num_train + num_eval]
-    # indistribution_tasks = tasks[num_train + num_eval: num_train + num_eval + num_indistribution]
-    # tsne_tasks = tasks[num_train + num_eval + num_indistribution: num_train + num_eval + num_indistribution + num_tsne]
-
-    eval_tasks = tasks[num_train + num_eval + num_indistribution: num_train + num_eval + num_indistribution + num_tsne]
+    train_tasks = tasks[: num_train]
+    eval_tasks = tasks[num_train:  num_train + num_eval]
+    indistribution_tasks = tasks[num_train + num_eval: num_train + num_eval + num_indistribution]
+    tsne_tasks = tasks[num_train + num_eval + num_indistribution: num_train + num_eval + num_indistribution + num_tsne]
 
     print('testing on {} test tasks, {} trajectories each'.format(len(eval_tasks), num_trajs))
 
