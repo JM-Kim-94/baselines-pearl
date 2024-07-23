@@ -69,6 +69,7 @@ class AntDir4Env(AntEnv):
             reward_contact=-contact_cost,
             reward_survive=survive_reward,
             torso_velocity=torso_velocity,
+            xyz_coor=torso_xyz_before
         )
 
 

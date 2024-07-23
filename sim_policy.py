@@ -5,6 +5,7 @@ import json
 import numpy as np
 import click
 import torch
+import matplotlib.pyplot as plt
 
 from rlkit.envs import ENVS
 from rlkit.envs.wrappers import NormalizedBoxEnv, CameraWrapper
@@ -30,13 +31,13 @@ def sim_policy(variant, path_to_exp, num_trajs=1, deterministic=False, save_vide
     '''
 
     # create multi-task environment and sample tasks
-    env = CameraWrapper(NormalizedBoxEnv(ENVS[variant['env_name']](**variant['env_params'])), variant['util_params']['gpu_id'])
+    env = CameraWrapper(NormalizedBoxEnv(ENVS[variant['env_name']](**variant['env_params'])),
+                        variant['util_params']['gpu_id'])
 
     num_train = variant["n_train_tasks"]  #
     num_eval = variant["n_eval_tasks"]  #
     num_indistribution = variant["n_indistribution_tasks"]  #
     num_tsne = variant["n_tsne_tasks"]  #
-
 
     tasks, total_tasks_dict_list = env.get_all_task_idx()
     obs_dim = int(np.prod(env.observation_space.shape))
@@ -86,18 +87,39 @@ def sim_policy(variant, path_to_exp, num_trajs=1, deterministic=False, save_vide
     # loop through tasks collecting rollouts
     all_rets = []
     video_frames = []
+    trajs = []
     for idx in eval_tasks:
         env.reset_task(idx)
         agent.clear_z()
         paths = []
+        task_traj = []
         for n in range(num_trajs):
-            path = rollout(env, agent, max_path_length=variant['algo_params']['max_path_length'], accum_context=True, save_frames=save_video)
+            path = rollout(env, agent, max_path_length=variant['algo_params']['max_path_length'], accum_context=True,
+                           save_frames=save_video)
             paths.append(path)
+            epi_traj = np.array([info['xyz_coor'] for info in path['env_infos']])
+            task_traj.append(epi_traj)
             if save_video:
                 video_frames += [t['frame'] for t in path['env_infos']]
             if n >= variant['algo_params']['num_exp_traj_eval']:
                 agent.infer_posterior(agent.context)
         all_rets.append([sum(p['rewards']) for p in paths])
+        trajs.append(task_traj)
+
+    alphas = [0.1, 0.6, 1]
+    line_styles = [':', '--', '-']
+    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'W']
+    task_label = ['0.25 * np.pi', '0.75 * np.pi', '1.25 * np.pi', '1.75 * np.pi']
+
+    for i, task_traj in enumerate(trajs):
+        plt.figure()
+        plt.style.use('seaborn-v0_8-dark')
+        plt.xlim(-2, 2)
+        plt.ylim(-2, 2)
+        plt.title(task_label[i])
+        for j, epi_traj in enumerate(task_traj):
+            plt.plot(epi_traj[:, 0], epi_traj[:, 1], linewidth=2.0, color='b', linestyle=line_styles[j])
+        plt.savefig(f'traj/{eval_tasks[i]}.png')
 
     if save_video:
         # save frames to file temporarily
@@ -106,7 +128,7 @@ def sim_policy(variant, path_to_exp, num_trajs=1, deterministic=False, save_vide
         for i, frm in enumerate(video_frames):
             frm.save(os.path.join(temp_dir, '%06d.jpg' % i))
 
-        video_filename=os.path.join(path_to_exp, 'video.mp4'.format(idx))
+        video_filename = os.path.join(path_to_exp, 'video.mp4'.format(idx))
         # run ffmpeg to make the video
         os.system('ffmpeg -i {}/%06d.jpg -vcodec mpeg4 {}'.format(temp_dir, video_filename))
         # delete the frames
